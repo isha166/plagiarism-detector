@@ -3,34 +3,23 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import re
 
-# ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="Plagiarism Detector", layout="wide")
 
-# ---------------- DARK + BEIGE 3D UI ----------------
+# ---------------- UI ----------------
 st.markdown("""
 <style>
-body {
-    background-color: #000000;
-}
+body { background-color: black; }
+.main { background-color: black; color: white; }
 
-.main {
-    background-color: #000000;
-    color: white;
-}
+h1, h2, h3 { color: #f5f5dc; }
 
-/* Titles */
-h1, h2, h3 {
-    color: #f5f5dc;
-}
-
-/* 3D Document Boxes */
+/* Beige 3D boxes */
 textarea {
     background-color: #f5f5dc !important;
     color: black !important;
     border-radius: 15px !important;
     box-shadow: 8px 8px 20px rgba(255,255,255,0.1),
                 -8px -8px 20px rgba(0,0,0,0.8);
-    padding: 10px;
 }
 
 /* Cards */
@@ -38,7 +27,6 @@ textarea {
     background-color: #111;
     padding: 20px;
     border-radius: 20px;
-    box-shadow: 0px 10px 30px rgba(255,255,255,0.1);
     margin-bottom: 20px;
 }
 
@@ -46,9 +34,7 @@ textarea {
 .stButton>button {
     background: linear-gradient(135deg, #d4af37, #f5deb3);
     color: black;
-    border-radius: 12px;
-    padding: 10px 20px;
-    font-weight: bold;
+    border-radius: 10px;
 }
 
 /* Highlight */
@@ -58,19 +44,10 @@ textarea {
     padding: 2px 6px;
     border-radius: 5px;
 }
-
-/* Score text */
-.score {
-    font-size: 32px;
-    font-weight: bold;
-    color: #facc15;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- TITLE ----------------
-st.title("🖤 Advanced Plagiarism Detector")
-st.write("Deep analysis of document similarity with multiple metrics.")
+st.title("Plagiarism Detector")
 
 # ---------------- INPUT ----------------
 col1, col2 = st.columns(2)
@@ -83,40 +60,36 @@ with col2:
 
 # ---------------- FUNCTIONS ----------------
 
-# TF-IDF similarity
-def tfidf_similarity(doc1, doc2):
-    vectorizer = TfidfVectorizer()
-    vectors = vectorizer.fit_transform([doc1, doc2])
-    return cosine_similarity(vectors[0], vectors[1])[0][0] * 100
+def clean_words(text):
+    return re.findall(r'\w+', text.lower())
 
-# Jaccard similarity
-def jaccard_similarity(doc1, doc2):
-    words1 = set(re.findall(r'\w+', doc1.lower()))
-    words2 = set(re.findall(r'\w+', doc2.lower()))
-    intersection = len(words1 & words2)
-    union = len(words1 | words2)
-    return (intersection / union) * 100 if union != 0 else 0
+def similarity(doc1, doc2):
+    tfidf = TfidfVectorizer()
+    vec = tfidf.fit_transform([doc1, doc2])
+    return cosine_similarity(vec[0], vec[1])[0][0] * 100
 
-# Cosine similarity (word count)
-def simple_cosine(doc1, doc2):
-    words1 = doc1.split()
-    words2 = doc2.split()
-    all_words = list(set(words1 + words2))
+def get_stats(text):
+    words = clean_words(text)
+    sentences = re.split(r'[.!?]+', text)
 
-    vec1 = [words1.count(w) for w in all_words]
-    vec2 = [words2.count(w) for w in all_words]
+    word_count = len(words)
+    unique_words = len(set(words))
+    avg_sentence = word_count / len(sentences) if len(sentences) > 0 else 0
 
-    dot = sum(a*b for a,b in zip(vec1, vec2))
-    mag1 = sum(a*a for a in vec1) ** 0.5
-    mag2 = sum(b*b for b in vec2) ** 0.5
+    richness = unique_words / word_count if word_count > 0 else 0
 
-    return (dot/(mag1*mag2))*100 if mag1 and mag2 else 0
+    return word_count, unique_words, avg_sentence, richness
 
-# Highlight
-def highlight(text1, text2):
-    words1 = re.findall(r'\w+', text1.lower())
-    words2 = re.findall(r'\w+', text2.lower())
-    common = set(words1).intersection(set(words2))
+def common_words(t1, t2):
+    w1 = set(clean_words(t1))
+    w2 = set(clean_words(t2))
+    common = list(w1.intersection(w2))
+    return common[:10]
+
+def highlight(t1, t2):
+    w1 = set(clean_words(t1))
+    w2 = set(clean_words(t2))
+    common = w1.intersection(w2)
 
     def mark(text):
         result = []
@@ -128,45 +101,77 @@ def highlight(text1, text2):
                 result.append(word)
         return " ".join(result)
 
-    return mark(text1), mark(text2)
+    return mark(t1), mark(t2)
 
-# ---------------- ANALYZE ----------------
-if st.button("🔍 Analyze Similarity"):
+def verdict(score):
+    if score < 30:
+        return "🟢 Low Plagiarism"
+    elif score < 70:
+        return "🟡 Moderate Plagiarism"
+    else:
+        return "🔴 High Plagiarism"
+
+# ---------------- BUTTON ----------------
+if st.button("🔍 Analyze"):
 
     if not text1.strip() or not text2.strip():
         st.warning("Please enter both documents.")
     else:
-        tfidf = tfidf_similarity(text1, text2)
-        jaccard = jaccard_similarity(text1, text2)
-        cosine = simple_cosine(text1, text2)
+        sim = similarity(text1, text2)
 
-        # ---------------- SCORES ----------------
+        # 📊 MAIN SCORE
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("📊 Multi-Metric Analysis")
-
-        st.markdown(f"<div class='score'>TF-IDF Similarity: {tfidf:.2f}%</div>", unsafe_allow_html=True)
-        st.progress(tfidf/100)
-
-        st.write(f"🔹 Jaccard Similarity: {jaccard:.2f}%")
-        st.write(f"🔹 Cosine Similarity (Word Count): {cosine:.2f}%")
-
+        st.subheader("📊 Similarity Score")
+        st.write(f"### {sim:.2f}%")
+        st.progress(sim/100)
+        st.write(verdict(sim))
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # ---------------- HIGHLIGHT ----------------
-        h1, h2 = highlight(text1, text2)
+        # 📈 DOCUMENT STATS
+        st.subheader("📈 Document Insights")
 
-        st.subheader("📌 Highlighted Matches")
+        w1, u1, s1, r1 = get_stats(text1)
+        w2, u2, s2, r2 = get_stats(text2)
 
         col3, col4 = st.columns(2)
 
         with col3:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.markdown("**Document 1**")
-            st.markdown(h1, unsafe_allow_html=True)
+            st.write("**Document 1 Stats**")
+            st.write(f"Words: {w1}")
+            st.write(f"Unique Words: {u1}")
+            st.write(f"Avg Sentence Length: {s1:.2f}")
+            st.write(f"Vocabulary Richness: {r1:.2f}")
             st.markdown("</div>", unsafe_allow_html=True)
 
         with col4:
             st.markdown("<div class='card'>", unsafe_allow_html=True)
-            st.markdown("**Document 2**")
+            st.write("**Document 2 Stats**")
+            st.write(f"Words: {w2}")
+            st.write(f"Unique Words: {u2}")
+            st.write(f"Avg Sentence Length: {s2:.2f}")
+            st.write(f"Vocabulary Richness: {r2:.2f}")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # 🔎 COMMON WORDS
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🔎 Common Words")
+        st.write(common_words(text1, text2))
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # ✨ HIGHLIGHT
+        h1, h2 = highlight(text1, text2)
+
+        st.subheader("📌 Highlighted Matches")
+
+        col5, col6 = st.columns(2)
+
+        with col5:
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.markdown(h1, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with col6:
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
             st.markdown(h2, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
