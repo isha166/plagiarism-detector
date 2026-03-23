@@ -10,34 +10,33 @@ st.set_page_config(page_title="Plagiarism Detector", layout="wide")
 st.markdown("""
 <style>
 
-/* Google Fonts */
+/* Import Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Playfair+Display:wght@500;600;700&display=swap');
 
-/* Background */
-body {
-    background-color: #0d0d0d;
+/* FORCE APPLY EVERYWHERE */
+* {
+    font-family: 'Poppins', sans-serif !important;
 }
 
-.main {
-    background-color: #0d0d0d;
-    color: white;
-    font-family: 'Poppins', sans-serif;
+/* Headings override */
+h1, h2, h3 {
+    font-family: 'Playfair Display', serif !important;
 }
 
-/* Headings */
+/* Title styling */
 h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 48px;
-    font-weight: 700;
-    color: #f5f5dc;
+    font-size: 48px !important;
+    font-weight: 700 !important;
+    color: #f5f5dc !important;
 }
 
-h2, h3 {
-    font-family: 'Playfair Display', serif;
-    color: #f5f5dc;
+/* Background */
+html, body, [data-testid="stAppViewContainer"] {
+    background-color: #0d0d0d !important;
+    color: white !important;
 }
 
-/* Neumorphic Cards */
+/* Neumorphic cards */
 .neu-card {
     background: #111;
     border-radius: 25px;
@@ -48,7 +47,7 @@ h2, h3 {
     margin-bottom: 20px;
 }
 
-/* Textarea (Document Input) */
+/* Textarea */
 textarea {
     background: #e8e0d4 !important;
     color: black !important;
@@ -62,20 +61,12 @@ textarea {
 
 /* Button */
 .stButton>button {
-    background: #111;
-    color: #f5f5dc;
-    border-radius: 15px;
-    padding: 10px 20px;
-    font-weight: 500;
+    background: #111 !important;
+    color: #f5f5dc !important;
+    border-radius: 15px !important;
     box-shadow: 
         5px 5px 10px #000,
         -5px -5px 10px #1a1a1a;
-}
-
-.stButton>button:hover {
-    box-shadow: 
-        inset 5px 5px 10px #000,
-        inset -5px -5px 10px #1a1a1a;
 }
 
 /* Highlight */
@@ -88,9 +79,8 @@ textarea {
 
 </style>
 """, unsafe_allow_html=True)
-
 # ---------------- TITLE ----------------
-st.markdown("<h1>🖤 Smart Plagiarism Detector</h1>", unsafe_allow_html=True)
+st.markdown("<h1>Plagiarism Detector</h1>", unsafe_allow_html=True)
 st.markdown("<p style='color:#d4d4d4;'>Analyze documents with intelligent insights and clean visualization.</p>", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
